@@ -220,6 +220,50 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* 開発者向けStripe決済テストセクション */}
+      <div className="bg-gray-100 py-8 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">決済機能テスト（開発者向け）</h2>
+            <p className="mb-4 text-gray-600">以下のボタンをクリックして、Stripe決済機能をテストできます。</p>
+            
+            <div className="flex flex-wrap gap-4">
+              <a 
+                href="/checkout?reservationId=test123&amount=5000" 
+                className="inline-block bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+              >
+                テスト決済 - 5,000円
+              </a>
+              
+              <a 
+                href="/checkout?reservationId=test456&amount=10000" 
+                className="inline-block bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+              >
+                テスト決済 - 10,000円
+              </a>
+              
+              <a 
+                href="/checkout?reservationId=test789&amount=15000" 
+                className="inline-block bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+              >
+                テスト決済 - 15,000円
+              </a>
+            </div>
+            
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+              <h3 className="font-semibold text-yellow-800">テスト用カード番号</h3>
+              <ul className="mt-2 text-sm text-yellow-700 space-y-1">
+                <li>成功: 4242 4242 4242 4242</li>
+                <li>認証失敗: 4000 0000 0000 0002</li>
+                <li>残高不足: 4000 0000 0000 9995</li>
+                <li>有効期限: 任意の将来の日付</li>
+                <li>CVC: 任意の3桁の数字</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <Footer />
     </div>
   )
