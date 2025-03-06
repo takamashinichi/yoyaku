@@ -6,10 +6,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2025-02-24.acacia', // Stripeの最新APIバージョンを使用
-  appInfo: {
-    name: '宿泊予約システム',
-    version: '1.0.0',
-  },
+  // appInfoのカスタム設定を削除してデフォルト設定を使用
 });
 
 export default stripe; 

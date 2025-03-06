@@ -110,16 +110,29 @@ export default function Reservation() {
     // 送信中フラグを設定
     setIsSubmitting(true);
     
-    // 予約処理をシミュレート（実際はAPIリクエストになる）
+    // 予約情報をAPIに送信（この例ではモックデータを使用）
+    // 実際の実装ではここでバックエンドAPIを呼び出して予約データを保存します
     setTimeout(() => {
       // 予約番号を生成（実際はサーバーから返される）
       const reservationId = 'RES' + Date.now().toString().slice(-8);
-      setReservationNumber(reservationId);
+      
+      // 決済ページに遷移
+      // 必要なデータをクエリパラメータで渡す
+      router.push({
+        pathname: '/checkout',
+        query: {
+          reservationId: reservationId,
+          amount: roomData ? roomData.price * nights : 0,
+          roomName: roomData?.name,
+          checkIn: checkIn,
+          checkOut: checkOut,
+          guestName: name
+        }
+      });
       
       // 送信完了
       setIsSubmitting(false);
-      setIsSubmitted(true);
-    }, 1500);
+    }, 1000);
   };
 
   // 日付をフォーマット

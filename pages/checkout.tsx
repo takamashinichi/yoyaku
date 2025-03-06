@@ -21,33 +21,49 @@ const CheckoutPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // URLからreservationIdを取得
-    const { reservationId, amount: queryAmount } = router.query
+    // URLからパラメータを取得
+    const { 
+      reservationId, 
+      amount: queryAmount,
+      roomName,
+      checkIn,
+      checkOut,
+      guestName
+    } = router.query;
     
     // 決済に必要な情報をURLパラメータから取得
     if (reservationId && queryAmount) {
-      const parsedAmount = parseInt(queryAmount as string, 10)
-      setAmount(parsedAmount)
+      const parsedAmount = parseInt(queryAmount as string, 10);
+      setAmount(parsedAmount);
       
-      // 予約情報を取得（実際のアプリではAPIから取得）
-      // ここでは簡易的にモックデータを使用
-      const mockReservation = {
-        id: reservationId,
-        roomType: 'デラックスルーム',
-        checkIn: '2023-12-01',
-        checkOut: '2023-12-03',
-        guestName: '山田太郎',
+      // 予約情報を設定
+      setReservation({
+        id: reservationId as string,
+        roomType: roomName as string || 'お部屋',
+        checkIn: checkIn as string || '未設定',
+        checkOut: checkOut as string || '未設定',
+        guestName: guestName as string || 'ゲスト',
         totalPrice: parsedAmount,
-      }
-      setReservation(mockReservation)
+      });
       
       // PaymentIntentを作成するAPIを呼び出し
-      fetchPaymentIntent(parsedAmount, reservationId as string)
+      fetchPaymentIntent(parsedAmount, reservationId as string);
     } else {
-      setError('予約情報が不足しています')
-      setLoading(false)
+      setError('予約情報が不足しています');
+      setLoading(false);
     }
-  }, [router.query])
+  }, [router.query]);
+
+  // 日付をフォーマット
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return new Intl.DateTimeFormat('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }).format(date);
+  };
 
   // PaymentIntentを作成
   const fetchPaymentIntent = async (amount: number, reservationId: string) => {
@@ -63,29 +79,29 @@ const CheckoutPage: React.FC = () => {
             reservationId,
           },
         }),
-      })
+      });
       
       if (!response.ok) {
-        throw new Error('決済の初期化に失敗しました')
+        throw new Error('決済の初期化に失敗しました');
       }
       
-      const data = await response.json()
-      setClientSecret(data.clientSecret)
-      setLoading(false)
+      const data = await response.json();
+      setClientSecret(data.clientSecret);
+      setLoading(false);
     } catch (error) {
-      setError('決済の初期化中にエラーが発生しました')
-      setLoading(false)
-      console.error('Payment intent creation error:', error)
+      console.error('Payment intent creation error:', error);
+      setError('決済の初期化中にエラーが発生しました。時間をおいて再度お試しいただくか、別の方法でお支払いください。');
+      setLoading(false);
     }
-  }
+  };
 
   const handleSuccess = () => {
-    router.push('/reservation/complete')
-  }
+    router.push('/reservation/complete');
+  };
 
   const handleError = (errorMsg: string) => {
-    setError(errorMsg)
-  }
+    setError(errorMsg);
+  };
 
   // Stripe Elementsのオプション
   const appearance = {
@@ -98,13 +114,13 @@ const CheckoutPage: React.FC = () => {
       fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
       borderRadius: '8px',
     },
-  }
+  };
 
   const options = {
     clientSecret,
     appearance,
     locale: 'ja' as const,
-  }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -112,7 +128,7 @@ const CheckoutPage: React.FC = () => {
       
       <main className="flex-grow py-10 px-4 sm:px-6 lg:px-8 bg-gray-50">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">決済情報の入力</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">ご予約のお支払い</h1>
           
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -153,11 +169,11 @@ const CheckoutPage: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">チェックイン</p>
-                      <p className="font-medium">{reservation.checkIn}</p>
+                      <p className="font-medium">{formatDate(reservation.checkIn)}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">チェックアウト</p>
-                      <p className="font-medium">{reservation.checkOut}</p>
+                      <p className="font-medium">{formatDate(reservation.checkOut)}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">宿泊者名</p>
