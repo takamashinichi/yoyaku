@@ -7,6 +7,8 @@ import { Elements } from '@stripe/react-stripe-js'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import CheckoutForm from '../components/CheckoutForm'
+import ErrorMessage from '../components/ErrorMessage'
+import AlternativePaymentOptions from '../components/AlternativePaymentOptions'
 import styles from '../styles/Home.module.css'
 
 // Stripeの公開可能キーを使って初期化
@@ -19,6 +21,7 @@ const CheckoutPage: React.FC = () => {
   const [reservation, setReservation] = useState<any>(null)
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
+  const [errorCode, setErrorCode] = useState<string | null>(null)
 
   useEffect(() => {
     // URLからパラメータを取得
@@ -50,6 +53,7 @@ const CheckoutPage: React.FC = () => {
       fetchPaymentIntent(parsedAmount, reservationId as string);
     } else {
       setError('予約情報が不足しています');
+      setErrorCode('MISSING_PARAMS');
       setLoading(false);
     }
   }, [router.query]);
@@ -102,17 +106,21 @@ const CheckoutPage: React.FC = () => {
     } catch (error: any) {
       console.error('Payment intent creation error:', error);
       let errorMessage = '決済の初期化中にエラーが発生しました。';
+      let code = 'PAYMENT_INIT_ERROR';
       
       // より詳細なエラーメッセージ
       if (error instanceof Error) {
         if (error.message.includes('API Key')) {
           errorMessage = 'Stripe APIキーが正しく設定されていません。管理者にお問い合わせください。';
+          code = 'INVALID_API_KEY';
         } else if (error.message.includes('network') || error.message.includes('connection')) {
           errorMessage = 'ネットワーク接続に問題があります。インターネット接続を確認して再度お試しください。';
+          code = 'NETWORK_ERROR';
         }
       }
       
-      setError(`${errorMessage} (エラーコード: PAY-${Date.now().toString().slice(-4)})`);
+      setError(errorMessage);
+      setErrorCode(code);
       setLoading(false);
     }
   };
@@ -123,6 +131,18 @@ const CheckoutPage: React.FC = () => {
 
   const handleError = (errorMsg: string) => {
     setError(errorMsg);
+    setErrorCode('PAYMENT_PROCESS_ERROR');
+  };
+
+  const handleRetry = () => {
+    setLoading(true);
+    setError(null);
+    setErrorCode(null);
+    if (reservation && reservation.id) {
+      fetchPaymentIntent(amount, reservation.id);
+    } else {
+      router.reload();
+    }
   };
 
   // Stripe Elementsのオプション
@@ -146,6 +166,11 @@ const CheckoutPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Head>
+        <title>お支払い | 宿泊予約システム</title>
+        <meta name="description" content="宿泊予約のお支払い手続きを行います。" />
+      </Head>
+      
       <Header />
       
       <main className="flex-grow py-10 px-4 sm:px-6 lg:px-8 bg-gray-50">
@@ -158,72 +183,26 @@ const CheckoutPage: React.FC = () => {
               <p className="ml-3 text-lg">決済情報を読み込み中...</p>
             </div>
           ) : error ? (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-              <h3 className="font-bold mb-2">エラーが発生しました</h3>
-              <p className="mb-4">{error}</p>
+            <div>
+              <ErrorMessage 
+                title="決済情報の読み込みエラー"
+                message={error}
+                code={errorCode || undefined}
+                onRetry={handleRetry}
+                showRetry={!errorCode?.includes('API_KEY')}
+              />
               
-              <div className="mt-6 bg-white p-5 rounded-lg border border-gray-200">
-                <h3 className="font-bold text-gray-800 mb-3">他のお支払い方法</h3>
-                <p className="text-gray-600 mb-4">
-                  オンライン決済に問題が発生しました。以下のいずれかの方法でお支払いいただけます：
-                </p>
-                
-                <div className="space-y-4">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 mt-1">
-                      <svg className="h-5 w-5 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <p className="font-medium text-gray-800">チェックイン時のお支払い</p>
-                      <p className="text-sm text-gray-600">ご到着時にフロントでクレジットカード、現金、またはQRコード決済でお支払いいただけます。</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 mt-1">
-                      <svg className="h-5 w-5 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <p className="font-medium text-gray-800">銀行振込</p>
-                      <p className="text-sm text-gray-600">予約IDを記載の上、指定の銀行口座にお振込みください。詳細はメールでお送りします。</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="mt-6 flex space-x-4">
-                  <button
-                    onClick={() => router.back()}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
-                  >
-                    戻る
-                  </button>
-                  
-                  <button
-                    onClick={() => {
-                      // 仮の予約完了処理
-                      router.push({
-                        pathname: '/reservation/complete',
-                        query: { 
-                          offline_payment: 'true',
-                          reservation_id: reservation?.id || 'unknown'
-                        }
-                      });
-                    }}
-                    className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700"
-                  >
-                    他の支払方法で予約する
-                  </button>
-                </div>
-              </div>
+              {reservation && (
+                <AlternativePaymentOptions 
+                  reservationId={reservation.id}
+                  onBack={() => router.back()}
+                />
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="md:col-span-2">
-                {clientSecret && (
+                {clientSecret ? (
                   <Elements options={options} stripe={stripePromise}>
                     <CheckoutForm
                       amount={amount}
@@ -231,6 +210,16 @@ const CheckoutPage: React.FC = () => {
                       onError={handleError}
                     />
                   </Elements>
+                ) : (
+                  <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+                    <p className="text-yellow-800">決済情報の読み込みに問題が発生しました。再読み込みしてください。</p>
+                    <button 
+                      onClick={handleRetry}
+                      className="mt-2 px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
+                    >
+                      再読み込み
+                    </button>
+                  </div>
                 )}
               </div>
               
